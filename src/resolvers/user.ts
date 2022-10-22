@@ -5,6 +5,9 @@ import { combineResolvers } from "graphql-resolvers";
 import { User } from "../models";
 import { Context } from "../types/types";
 import { isAdmin } from "./authorization";
+import { MySqlDataSource } from "../config/data-source";
+
+const userRepository = MySqlDataSource.getRepository(User);
 
 const createToken = async (user: User, secret: string, expiresIn: string) => {
   const { id, email, username, role } = user;
@@ -15,17 +18,17 @@ const createToken = async (user: User, secret: string, expiresIn: string) => {
 export default {
   Query: {
     users: async (parent: User, args: {}, {models}: Context) => {
-      return await models.User.findAll();
+      // return await models.User.findAll();
     },
     user: async (parent: User, {id}: {id: string}, {models}: Context) => {
-      return await models.User.findByPk(id);
+      // return await models.User.findByPk(id);
     },
     me: async (parent: User, args: {}, {models, me}: Context) => {
       if (!me) {
         return null;
       }
 
-      return await models.User.findByPk(me.id);
+      // return await models.User.findByPk(me.id);
     }
   },
 
@@ -35,7 +38,7 @@ export default {
       { username, email, password }: {username: string, email: string, password: string},
       { models, secret }: Context
     ) => {
-      const user: User = await models.User.create({
+      const user: User = await userRepository.save({
         username,
         email,
         password
@@ -48,37 +51,37 @@ export default {
       { login, password }: {login: string, password: string},
       { models, secret }: Context
     ) => {
-      const user = await models.User.findByLogin(login);
+      // const user = await models.User.findByLogin(login);
 
-      if (!user) {
-        throw new UserInputError('No user found with this login.');
-      }
+      // if (!user) {
+      //   throw new UserInputError('No user found with this login.');
+      // }
 
-      const isValid = await user.validatePassword(password);
+      // const isValid = await user.validatePassword(password);
 
-      if (!isValid) {
-        throw new AuthenticationError('Invalid password.');
-      }
+      // if (!isValid) {
+      //   throw new AuthenticationError('Invalid password.');
+      // }
 
-      return { token: createToken(user, secret, '30m') };
+      // return { token: createToken(user, secret, '30m') };
     },
     deleteUser: combineResolvers(
       isAdmin,
       async (parent, {id}: {id: number}, {models}: Context) => {
-        return await models.User.destroy({
-          where: { id }
-        });
+        // return await models.User.destroy({
+        //   where: { id }
+        // });
       }
     )
   },
 
   User: {
     messages: async (user: User, args: {}, {models}: Context) => {
-      return await models.Message.findAll({
-        where: {
-          userId: user.id
-        }
-      });
+      // return await models.Message.findAll({
+      //   where: {
+      //     userId: user.id
+      //   }
+      // });
     }
   }
 }

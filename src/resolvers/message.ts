@@ -1,6 +1,5 @@
 import { combineResolvers } from 'graphql-resolvers';
-import { isAuthenticated, isMessageOwner } from './authorization';
-import { Op } from 'sequelize';
+import { isAuthenticated } from './authorization';
 import { Message } from '../models';
 import { Context } from '../types/types';
 
@@ -18,30 +17,30 @@ export default {
       {
         where : {
           createdAt: {
-            [Op.lt]: fromCursorHash(cursor)
+            // [Op.lt]: fromCursorHash(cursor)
           }
         }
       } : {};
 
-      const messages = await models.Message.findAll({
-        order: [['createdAt', 'DESC']],
-        limit: limit + 1,
-        ...cursorOptions
-      });
+      // const messages = await models.Message.findAll({
+      //   order: [['createdAt', 'DESC']],
+      //   limit: limit + 1,
+      //   ...cursorOptions
+      // });
 
-      const hasNextPage = messages.length > limit;
-      const edges = hasNextPage ? messages.slice(0, -1) : messages;
+      // const hasNextPage = messages.length > limit;
+      // const edges = hasNextPage ? messages.slice(0, -1) : messages;
 
-      return {
-        edges,
-        pageInfo: {
-          endCursor: toCursorHash(edges[edges.length - 1].createdAt),
-          hasNextPage
-        }
-      };
+      // return {
+      //   edges,
+      //   pageInfo: {
+      //     endCursor: toCursorHash(edges[edges.length - 1].createdAt),
+      //     hasNextPage
+      //   }
+      // };
     },
     message: async (parent: Message, {id}: {id: number}, {models}: Context) => {
-      return await models.Message.findByPk(id);
+      // return await models.Message.findByPk(id);
     }
   },
 
@@ -49,31 +48,32 @@ export default {
     createMessage: combineResolvers(
       isAuthenticated,
       async (parent, {text}: {text: string}, {me, models}) => {
-        return await models.Message.create({
-          text,
-          userId: me.id
-        });
+        // return await models.Message.create({
+        //   text,
+        //   userId: me.id
+        // });
       }
     ),
     deleteMessage: combineResolvers(
       isAuthenticated,
-      isMessageOwner,
-      async (parent, {id}, {models}) => {
-        return await models.Message.destroy({ where: {id}});
+      // isMessageOwner,
+      async (parent, {id}: {id: number}, {models}) => {
+        console.log(id);
+        // return await models.Message.destroy({ where: {id}});
       }
     ),
     updateMessage: combineResolvers(
       isAuthenticated,
-      isMessageOwner,
+      // isMessageOwner,
       async (parent, {id, text}: {id: number, text: string}, {models}) => {
-        return await models.Message.update({text}, {where: {id}});
+        // return await models.Message.update({text}, {where: {id}});
       }
     )
   },
 
   Message: {
     user: async (message: Message, args: {}, { loaders }: Context) => {
-      return await loaders.user.load(message.user.id);
+      // return await loaders.user.load(message.user.id);
     }
   }
 }
