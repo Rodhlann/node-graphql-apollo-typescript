@@ -5,9 +5,7 @@ import { combineResolvers } from "graphql-resolvers";
 import { User } from "../models";
 import { Context } from "../types/types";
 import { isAdmin } from "./authorization";
-import { MySqlDataSource } from "../config/data-source";
-
-const userRepository = MySqlDataSource.getRepository(User);
+import { MessageRepository, UserRepository } from "../repository";
 
 const createToken = async (user: User, secret: string, expiresIn: string) => {
   const { id, email, username, role } = user;
@@ -17,28 +15,29 @@ const createToken = async (user: User, secret: string, expiresIn: string) => {
 
 export default {
   Query: {
-    users: async (parent: User, args: {}, {models}: Context) => {
-      // return await models.User.findAll();
+    users: async (_: User, __: {}, ___: Context) => {
+      return await UserRepository.find();
     },
-    user: async (parent: User, {id}: {id: string}, {models}: Context) => {
-      // return await models.User.findByPk(id);
+    user: async (_: User, {id}: {id: number}, {models}: Context) => {
+      return await UserRepository.findOneBy({id});
     },
-    me: async (parent: User, args: {}, {models, me}: Context) => {
+    me: async (_: User, __: {}, {me}: Context) => {
       if (!me) {
         return null;
       }
 
-      // return await models.User.findByPk(me.id);
+      return await UserRepository.findOneBy({ id: me.id });
     }
   },
 
   Mutation: {
     signUp: async (
-      parent: User,
+      _: User,
       { username, email, password }: {username: string, email: string, password: string},
-      { models, secret }: Context
+      { secret }: Context
     ) => {
-      const user: User = await userRepository.save({
+      const user: User = await UserRepository.save({
+        relations: ['message'],
         username,
         email,
         password
@@ -47,41 +46,42 @@ export default {
       return {token: createToken(user, secret, '30m')};
     },
     signIn: async (
-      parent: User,
+      _: User,
       { login, password }: {login: string, password: string},
-      { models, secret }: Context
+      { secret }: Context
     ) => {
-      // const user = await models.User.findByLogin(login);
+      const user = await UserRepository.findByLogin(login);
 
-      // if (!user) {
-      //   throw new UserInputError('No user found with this login.');
-      // }
+      if (!user) {
+        throw new UserInputError('No user found with this login.');
+      }
 
-      // const isValid = await user.validatePassword(password);
+      const isValid = await user.validatePassword(password);
 
-      // if (!isValid) {
-      //   throw new AuthenticationError('Invalid password.');
-      // }
+      if (!isValid) {
+        throw new AuthenticationError('Invalid password.');
+      }
 
-      // return { token: createToken(user, secret, '30m') };
+      return { token: createToken(user, secret, '30m') };
     },
     deleteUser: combineResolvers(
       isAdmin,
-      async (parent, {id}: {id: number}, {models}: Context) => {
-        // return await models.User.destroy({
-        //   where: { id }
-        // });
+      async (_, {id}: {id: number}, __: Context) => {
+        return await UserRepository.delete({id});
       }
     )
   },
 
   User: {
-    messages: async (user: User, args: {}, {models}: Context) => {
-      // return await models.Message.findAll({
-      //   where: {
-      //     userId: user.id
-      //   }
-      // });
+    messages: async (user: User, _: {}, __: Context) => {
+      return MessageRepository.find({
+        relations: ['user'],
+        where: {
+          user: {
+            id: user.id
+          }
+        }
+      });
     }
   }
 }

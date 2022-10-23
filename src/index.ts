@@ -4,7 +4,7 @@ import models, { User, Message } from "./models";
 import loaders from './loaders';
 import schema from './schema';
 import resolvers from './resolvers';
-import express, { Request } from "express";
+import express from "express";
 import jwt, { Secret } from 'jsonwebtoken';
 import { CustomRequest } from "./types/types";
 import { AuthenticationError } from "apollo-server";
@@ -51,8 +51,8 @@ const server = new ApolloServer({
       secret: process.env.SECRET,
       me,
       loaders: {
-        // user: new DataLoader((keys: readonly string[]) =>
-        //   loaders.user.batchUsers(keys.concat(), models))
+        user: new DataLoader((keys: readonly string[]) =>
+          loaders.user.batchUsers(keys.concat(), models))
       }
     };
   }
@@ -60,7 +60,7 @@ const server = new ApolloServer({
 
 MySqlDataSource.initialize().then(async () => {
   // if (isTest) {
-    await createUserWithMessages(new Date());
+    await createUserWithMessages();
   // }
 
   server.start().then(() => {
@@ -71,9 +71,9 @@ MySqlDataSource.initialize().then(async () => {
   });
 });
 
-const createUserWithMessages = async (date: Date) => {
-  await MySqlDataSource.manager.clear(User);
-  await MySqlDataSource.manager.clear(Message);
+const createUserWithMessages = async () => {
+  await MySqlDataSource.manager.delete(User, {});
+  await MySqlDataSource.manager.delete(Message, {});
 
   const user1 = new User();
   user1.username = 'rodhlann';
@@ -81,46 +81,20 @@ const createUserWithMessages = async (date: Date) => {
   user1.password = 'pass123';
   user1.role = UserRole.ADMIN;
   await MySqlDataSource.manager.save(user1);
-    // {
-    //   username: 'rodhlann',
-    //   password: 'pass123',
-    //   email: 'rodhlann@gmail.com',
-    //   role: 'ADMIN',
-    //   // messages: [
-    //   //   {
-    //   //     text: 'wow this is a cool message!',
-    //   //     createdAt: date.setSeconds(date.getSeconds() + 1),
-    //   //   }
-    //   // ]
-    // }),
-    // {
-    //   include: [Message]
-    // }
-  // );
+
+  const message1 = new Message();
+  message1.text = 'wow this is a cool message!';
+  message1.user = user1;
+  await MySqlDataSource.manager.save(message1);
 
   const user2 = new User();
   user2.username = 'someotherguy';
   user2.email = 'someotherguy@gmail.com';
   user2.password = 'word456';
   await MySqlDataSource.manager.save(user2);
-  // await User.create(
-  //   {
-  //     username: 'someotherguy',
-  //     password: 'word456',
-  //     email: 'someotherguy@gmail.com',
-  //     messages: [
-  //       {
-  //         text: 'this is a less cool message...',
-  //         createdAt: date.setSeconds(date.getSeconds() + 1)
-  //       },
-  //       {
-  //         text: 'whazzzaaaaaaaah',
-  //         createdAt: date.setSeconds(date.getSeconds() + 1)
-  //       }
-  //     ]
-  //   },
-  //   {
-  //     include: [Message]
-  //   }
-  // );
+
+  const message2 = new Message();
+  message2.text = 'this is a less cool message...';
+  message2.user = user2;
+  await MySqlDataSource.manager.save(message2);
 };

@@ -1,5 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import User from './user';
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { User } from './index';
 
 @Entity()
 export default class Message {
@@ -11,6 +11,11 @@ export default class Message {
   })
   text!: string;
 
-  // @BelongsTo(() => User, { foreignKey: 'user_id' })
-  // user!: User;
+  @ManyToOne(() => User, (user) => user.id, { 
+    onDelete: 'CASCADE',
+  })
+  user!: User;
+
+  @CreateDateColumn()
+  createdAt!: Date
 }

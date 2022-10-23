@@ -1,7 +1,9 @@
 import { combineResolvers } from 'graphql-resolvers';
-import { isAuthenticated } from './authorization';
+import { isAuthenticated, isMessageOwner } from './authorization';
 import { Message } from '../models';
 import { Context } from '../types/types';
+import { MessageRepository } from '../repository';
+import { LessThan } from 'typeorm';
 
 const toCursorHash = (string: string) => Buffer.from(string).toString('base64');
 const fromCursorHash = (string: string) => Buffer.from(string, 'base64').toString('ascii');
@@ -9,71 +11,77 @@ const fromCursorHash = (string: string) => Buffer.from(string, 'base64').toStrin
 export default {
   Query: {
     messages: async (
-      parent: Message, 
+      _: Message, 
       { cursor, limit = 100 }: {cursor: string, limit: number}, 
-      { models }: Context
+      __: Context
     ) => {
       const cursorOptions = cursor ? 
       {
         where : {
-          createdAt: {
-            // [Op.lt]: fromCursorHash(cursor)
-          }
+          createdAt: LessThan(new Date(fromCursorHash(cursor)))
         }
       } : {};
 
-      // const messages = await models.Message.findAll({
-      //   order: [['createdAt', 'DESC']],
-      //   limit: limit + 1,
-      //   ...cursorOptions
-      // });
+      const messages = await MessageRepository.find({
+        relations: ['user'],
+        order: {
+          createdAt: 'DESC'
+        },
+        take: limit + 1,
+        ...cursorOptions
+      });
 
-      // const hasNextPage = messages.length > limit;
-      // const edges = hasNextPage ? messages.slice(0, -1) : messages;
+      const hasNextPage = messages.length > limit;
+      const edges = hasNextPage ? messages.slice(0, -1) : messages;
 
-      // return {
-      //   edges,
-      //   pageInfo: {
-      //     endCursor: toCursorHash(edges[edges.length - 1].createdAt),
-      //     hasNextPage
-      //   }
-      // };
+      return {
+        edges,
+        pageInfo: {
+          endCursor: toCursorHash(edges[edges.length - 1].createdAt.toString()),
+          hasNextPage
+        }
+      };
     },
-    message: async (parent: Message, {id}: {id: number}, {models}: Context) => {
-      // return await models.Message.findByPk(id);
+    message: async (_: Message, {id}: {id: number}, __: Context) => {
+      return await MessageRepository.findOneBy({id});
     }
   },
 
   Mutation: {
     createMessage: combineResolvers(
       isAuthenticated,
-      async (parent, {text}: {text: string}, {me, models}) => {
-        // return await models.Message.create({
-        //   text,
-        //   userId: me.id
-        // });
+      async (_, {text}: {text: string}, {me}) => {
+        return await MessageRepository.save({
+          relations: ['user'],
+          text,
+          user: me
+        });
       }
     ),
     deleteMessage: combineResolvers(
       isAuthenticated,
-      // isMessageOwner,
-      async (parent, {id}: {id: number}, {models}) => {
-        console.log(id);
-        // return await models.Message.destroy({ where: {id}});
+      isMessageOwner,
+      async (_, {id}: {id: number}, __) => {
+        return !!await MessageRepository.delete({id});
       }
     ),
     updateMessage: combineResolvers(
       isAuthenticated,
-      // isMessageOwner,
-      async (parent, {id, text}: {id: number, text: string}, {models}) => {
-        // return await models.Message.update({text}, {where: {id}});
+      isMessageOwner,
+      async (_, {id, text}: {id: number, text: string}, __) => {
+        MessageRepository.update(id, {text});
+        return MessageRepository.findOneBy({id});
       }
     )
   },
 
   Message: {
-    user: async (message: Message, args: {}, { loaders }: Context) => {
-      // return await loaders.user.load(message.user.id);
+    user: async (message: Message, _: {}, { loaders }: Context) => {
+      const id = message.user.id?.toString();
+      if (!id) {
+        throw new Error("Malformed message data. Missing associated User ID.");
+      }
+      return await loaders.user.load(id.toString());
     }
   }
 }

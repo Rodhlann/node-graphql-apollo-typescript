@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import { BeforeInsert, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
-import Message from "./message";
+import {Message} from "./index";
 
 @Entity()
 export default class User {
@@ -30,7 +30,7 @@ export default class User {
   })
   role!: UserRole;
 
-  @OneToMany(() => Message, (message) => message.id, {
+  @OneToMany(() => Message, (message) => message.user, {
     cascade: true
   })
   messages!: Message[]
@@ -48,25 +48,7 @@ export default class User {
   public async validatePassword(password: string): Promise<boolean> {
     return await bcrypt.compare(password, this.password);
   }
-
-  // public static async findByLogin(login: string): Promise<User | null> {
-  //   let user = await User.findOne({
-  //     where: {username: login}
-  //   });
-  
-  //   if (!user) {
-  //     user = await User.findOne({
-  //       where: {email: login}
-  //     });
-  //   }
-  
-  //   return user;
-  // }
 }
-
-// User.beforeCreate(async user => {
-//   user.password = await user.generatePasswordHash();
-// });
 
 export enum UserRole {
   ADMIN = 'ADMIN'
