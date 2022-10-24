@@ -4,7 +4,7 @@ import { combineResolvers } from "graphql-resolvers";
 
 import { User } from "../models";
 import { Context } from "../types/types";
-import { isAdmin } from "./authorization";
+import { isAdmin, isAuthenticated } from "./authorization";
 import { MessageRepository, UserRepository } from "../repository";
 
 const createToken = async (user: User, secret: string, expiresIn: string) => {
@@ -21,13 +21,12 @@ export default {
     user: async (_: User, {id}: {id: number}, {models}: Context) => {
       return await UserRepository.findOneBy({id});
     },
-    me: async (_: User, __: {}, {me}: Context) => {
-      if (!me) {
-        return null;
+    me: combineResolvers(
+      isAuthenticated,
+      async (_: User, __: {}, {me}: Context) => {
+        return await UserRepository.findOneBy({ id: me.id });
       }
-
-      return await UserRepository.findOneBy({ id: me.id });
-    }
+    )
   },
 
   Mutation: {
@@ -36,12 +35,13 @@ export default {
       { username, email, password }: {username: string, email: string, password: string},
       { secret }: Context
     ) => {
-      const user: User = await UserRepository.save({
-        relations: ['message'],
+      const newUser = UserRepository.create({
         username,
         email,
         password
       });
+
+      const user: User = await UserRepository.save(newUser);
 
       return {token: createToken(user, secret, '30m')};
     },
@@ -67,7 +67,7 @@ export default {
     deleteUser: combineResolvers(
       isAdmin,
       async (_, {id}: {id: number}, __: Context) => {
-        return await UserRepository.delete({id});
+        return !!await UserRepository.delete({id});
       }
     )
   },
