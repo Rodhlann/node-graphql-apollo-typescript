@@ -1,4 +1,4 @@
-import MessageRepository from "./message";
-import UserRepository from "./user";
+import MessageRepository from "./messageRepository";
+import UserRepository from "./userRepository";
 
 export { UserRepository, MessageRepository };

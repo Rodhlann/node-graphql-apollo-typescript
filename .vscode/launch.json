@@ -2,12 +2,15 @@
   "version": "0.1.0",
   "configurations": [
     {
-      "name": "Debug main.ts",
+      "name": "Debug Typescript App",
       "type": "node",
       "request": "launch",
-      "cwd": "${workspaceRoot}",
-      "runtimeArgs": ["-r", "ts-node/register"],
-      "args": ["${workspaceRoot}/src/main.ts"]
+      "program": "${workspaceFolder}/src/index.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "runtimeArgs": [
+        "--experimental-specifier-resolution=node"
+      ]
     }
   ]
 }

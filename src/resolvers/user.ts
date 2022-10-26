@@ -7,6 +7,9 @@ import { Context } from "../types/types";
 import { isAdmin, isAuthenticated } from "./authorization";
 import { MessageRepository, UserRepository } from "../repository";
 
+const userRepository = new UserRepository();
+const messageRepository = new MessageRepository();
+
 const createToken = async (user: User, secret: string, expiresIn: string) => {
   const { id, email, username, role } = user;
   const token = jwt.sign({ id, email, username, role }, secret, {expiresIn});
@@ -16,15 +19,15 @@ const createToken = async (user: User, secret: string, expiresIn: string) => {
 export default {
   Query: {
     users: async (_: User, __: {}, ___: Context) => {
-      return await UserRepository.find();
+      return await userRepository.getAll();
     },
     user: async (_: User, {id}: {id: number}, {models}: Context) => {
-      return await UserRepository.findOneBy({id});
+      return await userRepository.get(id);
     },
     me: combineResolvers(
       isAuthenticated,
       async (_: User, __: {}, {me}: Context) => {
-        return await UserRepository.findOneBy({ id: me.id });
+        return await userRepository.get(me.id);
       }
     )
   },
@@ -35,13 +38,12 @@ export default {
       { username, email, password }: {username: string, email: string, password: string},
       { secret }: Context
     ) => {
-      const newUser = UserRepository.create({
-        username,
-        email,
-        password
-      });
+      const newUser = new User();
+      newUser.username = username;
+      newUser.email = email;
+      newUser.password = password;
 
-      const user: User = await UserRepository.save(newUser);
+      const user: User = await userRepository.save(newUser);
 
       return {token: createToken(user, secret, '30m')};
     },
@@ -50,7 +52,7 @@ export default {
       { login, password }: {login: string, password: string},
       { secret }: Context
     ) => {
-      const user = await UserRepository.findByLogin(login);
+      const user = await userRepository.getByLogin(login);
 
       if (!user) {
         throw new UserInputError('No user found with this login.');
@@ -67,21 +69,14 @@ export default {
     deleteUser: combineResolvers(
       isAdmin,
       async (_, {id}: {id: number}, __: Context) => {
-        return !!await UserRepository.delete({id});
+        return !!await userRepository.delete(id);
       }
     )
   },
 
   User: {
     messages: async (user: User, _: {}, __: Context) => {
-      return MessageRepository.find({
-        relations: ['user'],
-        where: {
-          user: {
-            id: user.id
-          }
-        }
-      });
+      return messageRepository.get(user.id);
     }
   }
 }

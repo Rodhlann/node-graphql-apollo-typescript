@@ -3,7 +3,8 @@ import { isAuthenticated, isMessageOwner } from './authorization';
 import { Message } from '../models';
 import { Context } from '../types/types';
 import { MessageRepository } from '../repository';
-import { LessThan } from 'typeorm';
+
+const messageRepository = new MessageRepository();
 
 const toCursorHash = (string: string) => Buffer.from(string).toString('base64');
 const fromCursorHash = (string: string) => Buffer.from(string, 'base64').toString('ascii');
@@ -15,21 +16,8 @@ export default {
       { cursor, limit = 100 }: {cursor: string, limit: number}, 
       __: Context
     ) => {
-      const cursorOptions = cursor ? 
-      {
-        where : {
-          createdAt: LessThan(new Date(fromCursorHash(cursor)))
-        }
-      } : {};
-
-      const messages = await MessageRepository.find({
-        relations: ['user'],
-        order: {
-          createdAt: 'DESC'
-        },
-        take: limit + 1,
-        ...cursorOptions
-      });
+      const readableCursor = cursor && fromCursorHash(cursor);
+      const messages = await messageRepository.getPaginated(readableCursor, limit);
 
       const hasNextPage = messages.length > limit;
       const edges = hasNextPage ? messages.slice(0, -1) : messages;
@@ -43,7 +31,7 @@ export default {
       };
     },
     message: async (_: Message, {id}: {id: number}, __: Context) => {
-      return await MessageRepository.findOneBy({id});
+      return await messageRepository.get(id);
     }
   },
 
@@ -51,26 +39,21 @@ export default {
     createMessage: combineResolvers(
       isAuthenticated,
       async (_, {text}: {text: string}, {me}) => {
-        return await MessageRepository.save({
-          relations: ['user'],
-          text,
-          user: me
-        });
+        return await messageRepository.save(text, me);
       }
     ),
     deleteMessage: combineResolvers(
       isAuthenticated,
       isMessageOwner,
       async (_, {id}: {id: number}, __) => {
-        return !!await MessageRepository.delete({id});
+        return await messageRepository.delete(id);
       }
     ),
     updateMessage: combineResolvers(
       isAuthenticated,
       isMessageOwner,
       async (_, {id, text}: {id: number, text: string}, __) => {
-        MessageRepository.update(id, {text});
-        return MessageRepository.findOneBy({id});
+        return await messageRepository.update(id, text);
       }
     )
   },

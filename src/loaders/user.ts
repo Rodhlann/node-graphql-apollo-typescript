@@ -2,12 +2,10 @@ import { In } from 'typeorm';
 import models from '../models';
 import { UserRepository } from '../repository';
 
-export const batchUsers = async (keys: string[], model: typeof models) => {
-  const users = await UserRepository.find({
-    where: {
-      id: In(keys)
-    },
-  });
+const userRepository = new UserRepository();
 
-  return keys.map(key => users.find(user => user.id === Number(key)));
+export const batchUsers = async (ids: number[], model: typeof models) => {
+  const users = await userRepository.getAllByIds(ids);
+
+  return ids.map(id => users.find(user => user.id === id));
 };

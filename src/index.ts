@@ -51,7 +51,7 @@ const server = new ApolloServer({
       secret: process.env.SECRET,
       me,
       loaders: {
-        user: new DataLoader((keys: readonly string[]) =>
+        user: new DataLoader((keys: readonly number[]) =>
           loaders.user.batchUsers(keys.concat(), models))
       }
     };
@@ -86,6 +86,8 @@ const createUserWithMessages = async () => {
   message1.text = 'wow this is a cool message!';
   message1.user = user1;
   await MySqlDataSource.manager.save(message1);
+
+  await new Promise(r => setTimeout(r, 1000));
 
   const user2 = new User();
   user2.username = 'someotherguy';
