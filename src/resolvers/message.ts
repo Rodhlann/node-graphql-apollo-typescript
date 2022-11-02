@@ -2,7 +2,7 @@ import { combineResolvers } from 'graphql-resolvers';
 import { isAuthenticated, isMessageOwner } from './authorization';
 import { Message } from '../models';
 import { Context } from '../types/types';
-import { MessageRepository } from '../repository';
+import { MessageRepository, UserRepository } from '../repository';
 
 const messageRepository = new MessageRepository();
 
@@ -64,7 +64,7 @@ export default {
       if (!id) {
         throw new Error("Malformed message data. Missing associated User ID.");
       }
-      return await loaders.user.load(id.toString());
+      return await new UserRepository().get(message.user.id);
     }
   }
 }

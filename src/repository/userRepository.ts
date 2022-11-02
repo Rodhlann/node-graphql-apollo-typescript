@@ -21,7 +21,6 @@ export default class UserRepository implements IUserRepository {
 
   async get(id: number): Promise<User> {
     const user = await this.repository.findOne({
-      // relations: ['message'],
       where: {id}
     });
 

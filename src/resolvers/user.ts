@@ -76,7 +76,7 @@ export default {
 
   User: {
     messages: async (user: User, _: {}, __: Context) => {
-      return messageRepository.get(user.id);
+      return messageRepository.getByUserId(user.id);
     }
   }
 }

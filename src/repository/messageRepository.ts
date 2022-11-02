@@ -42,6 +42,15 @@ export default class MessageRepository implements IMessageRepository {
     throw new UserInputError("Message not found with ID: " + id); 
   }
 
+  async getByUserId(id: number): Promise<Message[]> {
+    return await this.repository.find({
+      relations: ['user'],
+      where: {
+        user: {id}
+      }
+    });
+  }
+
   async delete(id: number): Promise<Boolean> {
     return !!this.repository.delete({id});
   }

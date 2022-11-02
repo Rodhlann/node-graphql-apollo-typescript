@@ -49,11 +49,7 @@ const server = new ApolloServer({
     return {
       models,
       secret: process.env.SECRET,
-      me,
-      loaders: {
-        user: new DataLoader((keys: readonly number[]) =>
-          loaders.user.batchUsers(keys.concat(), models))
-      }
+      me
     };
   }
 });
