@@ -1,10 +1,10 @@
 import DataLoader from "dataloader";
-import { getUserLoader } from "./user";
+import { getUsers } from "./user";
 
 
 const createLoaders = () => {
     return {
-        userLoader: new DataLoader((ids: readonly  number[]) => getUserLoader(ids)),
+        userLoader: new DataLoader((ids: readonly  number[]) => getUsers(ids)),
     }
 }
   

@@ -14,7 +14,6 @@ import { UserRepository } from "./repository";
 import createLoaders from "./loaders";
 
 const isTest = !!process.env.TEST_DATABASE;
-const userRepository = new UserRepository();
 
 const getMe = async (req: CustomRequest) => {
   const token = req.headers['x-token'];
@@ -85,6 +84,15 @@ const createUserWithMessages = async () => {
   message1.user = user1;
   await MySqlDataSource.manager.save(message1);
 
+  // wait for one second to provide unique timestamp cursor to entry
+  await new Promise(r => setTimeout(r, 1000));
+
+  const message3 = new Message();
+  message3.text = 'wow this is a cool message again!';
+  message3.user = user1;
+  await MySqlDataSource.manager.save(message3);
+
+  // wait for one second to provide unique timestamp cursor to entry
   await new Promise(r => setTimeout(r, 1000));
 
   const user2 = new User();

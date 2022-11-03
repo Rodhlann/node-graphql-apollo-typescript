@@ -21,11 +21,12 @@ export default {
 
       const hasNextPage = messages.length > limit;
       const edges = hasNextPage ? messages.slice(0, -1) : messages;
+      const endCursor = toCursorHash(edges[edges.length - 1].createdAt?.toString());
 
       return {
         edges,
         pageInfo: {
-          endCursor: toCursorHash(edges[edges.length - 1].createdAt.toString()),
+          endCursor,
           hasNextPage
         }
       };
@@ -64,7 +65,7 @@ export default {
       if (!id) {
         throw new Error("Malformed message data. Missing associated User ID.");
       }
-      return await new UserRepository().get(message.user.id);
+      return await loaders.userLoader.load(message.user.id);
     }
   }
 }

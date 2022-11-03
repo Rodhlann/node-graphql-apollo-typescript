@@ -21,7 +21,7 @@ export default {
     users: async (_: User, __: {}, ___: Context) => {
       return await userRepository.getAll();
     },
-    user: async (_: User, {id}: {id: number}, {models}: Context) => {
+    user: async (_: User, {id}: {id: number}, {loaders}: Context) => {
       return await userRepository.get(id);
     },
     me: combineResolvers(
