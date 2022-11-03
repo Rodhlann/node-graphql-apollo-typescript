@@ -11,7 +11,7 @@ export default class UserRepository implements IUserRepository {
     return await this.repository.find();
   }
 
-  async getAllByIds(ids: number[]): Promise<User[]> {
+  async getAllByIds(ids: number[]) {
     return await this.repository.find({
       where: {
         id: In(ids)

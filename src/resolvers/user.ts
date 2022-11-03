@@ -26,8 +26,8 @@ export default {
     },
     me: combineResolvers(
       isAuthenticated,
-      async (_: User, __: {}, {me}: Context) => {
-        return await userRepository.get(me.id);
+      async (_: User, __: {}, {me, loaders}: Context) => {
+        return await loaders.userLoader.load(me.id);
       }
     )
   },

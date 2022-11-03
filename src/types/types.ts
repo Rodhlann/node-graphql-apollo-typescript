@@ -14,6 +14,6 @@ export type Context = {
   secret: string,
   me: User,
   loaders: {
-    user: DataLoader<string, string>
+    userLoader: DataLoader<number, User>
   }
 }

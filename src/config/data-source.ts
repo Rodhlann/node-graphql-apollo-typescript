@@ -4,6 +4,7 @@ import { DataSource } from "typeorm";
 import { User, Message } from "../models";
 
 export const MySqlDataSource = new DataSource({
+  socketPath:"/tmp/mysql.sock",
   type: "mysql",
   host: "localhost",
   port: 3306,

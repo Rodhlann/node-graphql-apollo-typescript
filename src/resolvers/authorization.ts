@@ -1,14 +1,13 @@
 import { ForbiddenError } from "apollo-server";
 import { combineResolvers, skip } from "graphql-resolvers";
 import { User } from "../models";
-import { MessageRepository, UserRepository } from "../repository";
+import { MessageRepository } from "../repository";
 import { Context } from "../types/types";
 
 const messageRepository = new MessageRepository();
-const userRepository = new UserRepository();
 
-export const isAuthenticated = async (_: User, __: {}, {me}: Context) => {
-  if (!me || !await userRepository.get(me.id)) {
+export const isAuthenticated = async (_: User, __: {}, {me, loaders}: Context) => {
+  if (!me || !await loaders.userLoader.load(me.id)) {
     return new ForbiddenError('No authenticated user.');
   }
   return skip;

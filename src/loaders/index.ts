@@ -1,3 +1,11 @@
-import * as user from './user';
+import DataLoader from "dataloader";
+import { getUserLoader } from "./user";
 
-export default {user};
+
+const createLoaders = () => {
+    return {
+        userLoader: new DataLoader((ids: readonly  number[]) => getUserLoader(ids)),
+    }
+}
+  
+export default createLoaders;

@@ -1,19 +1,20 @@
 import "reflect-metadata";
 import { ApolloServer } from "apollo-server-express";
 import models, { User, Message } from "./models";
-import loaders from './loaders';
 import schema from './schema';
 import resolvers from './resolvers';
 import express from "express";
 import jwt, { Secret } from 'jsonwebtoken';
 import { CustomRequest } from "./types/types";
 import { AuthenticationError } from "apollo-server";
-import DataLoader from "dataloader";
 import cors from "cors";
 import { MySqlDataSource } from "./config/data-source";
 import { UserRole } from "./models/user";
+import { UserRepository } from "./repository";
+import createLoaders from "./loaders";
 
 const isTest = !!process.env.TEST_DATABASE;
+const userRepository = new UserRepository();
 
 const getMe = async (req: CustomRequest) => {
   const token = req.headers['x-token'];
@@ -49,9 +50,10 @@ const server = new ApolloServer({
     return {
       models,
       secret: process.env.SECRET,
-      me
+      me,
+      loaders: createLoaders()
     };
-  }
+  },
 });
 
 MySqlDataSource.initialize().then(async () => {
