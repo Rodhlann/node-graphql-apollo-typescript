@@ -3,9 +3,9 @@ import { AuthenticationError, UserInputError } from 'apollo-server';
 import { combineResolvers } from "graphql-resolvers";
 
 import { User } from "../models";
-import { Context } from "../types/types";
 import { isAdmin, isAuthenticated } from "./authorization";
 import { MessageRepository, UserRepository } from "../repository";
+import { Context } from "../types/types";
 
 const userRepository = new UserRepository();
 const messageRepository = new MessageRepository();
