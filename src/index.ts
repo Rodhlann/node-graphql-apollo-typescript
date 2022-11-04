@@ -55,9 +55,9 @@ const server = new ApolloServer({
 });
 
 MySqlDataSource.initialize().then(async () => {
-  // if (isTest) {
+  if (isTest) {
     await createUserWithMessages();
-  // }
+  }
 
   server.start().then(() => {
     server.applyMiddleware({ app, path: '/graphql' });

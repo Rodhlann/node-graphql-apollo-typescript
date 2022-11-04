@@ -10,7 +10,7 @@ export const MySqlDataSource = new DataSource({
   port: 3306,
   username: process.env.DATABASE_USER,
   password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE,
+  database: process.env.TEST_DATABASE || process.env.DATABASE,
   synchronize: true,
   logging: true,
   entities: [User, Message],
