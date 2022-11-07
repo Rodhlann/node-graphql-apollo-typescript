@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
 const API_URL = 'http://localhost:8000/graphql';
 const headers = { 'Content-Type': 'application/json' };
@@ -12,6 +12,15 @@ describe('user tests', () => {
         );
         const { users } = result.data.data;
         expect(users).toHaveLength(2);
+    });
+
+    test('confirm users are returned with messages', async () => {
+        const result = await axios.post(API_URL,
+            { query: '{users{messages{id}}}' },
+            { headers }
+        );
+        const { users } = result.data.data;
+        expect(users[0].messages).toHaveLength(2);
     });
 
     test('get user by id', async () => {
@@ -42,41 +51,45 @@ describe('user tests', () => {
         expect(user).toStrictEqual(users[userIndex]);
     })
 
-    test('sign in and confirm user is me', async () => {
+    test('user sign up', async () => {
         const variables = {
-            username: 'rodhlann',
-            password: 'pass123'
+            username: "orzo",
+            email: "orzo.stinkinz@email.com",
+            password: "stinker1"
         };
 
         const tokenResponse = await axios.post(API_URL, {
-            query: `
-                    mutation ($username: String!, $password: String!) {
-                        signIn(login: $username, password: $password) {
+                query: `
+                    mutation($username: String!, $email: String!, $password: String!) {
+                        signUp(username: $username, email: $email, password: $password) {
                             token
                         }
                     }
                 `,
                 variables
-            },
+            }, 
             { headers }
         );
-        const { token } = tokenResponse.data.data.signIn;
+
+        const { token } = tokenResponse.data.data.signUp;
         expect(token).toBeTruthy();
 
-        const meResponse = await axios.post(API_URL, {
-            query: `
-                {
-                    me {
-                        username
-                    }
-                }
-            `,
-            },
-            { headers: { 'x-token': token, ...headers } }
-        );
-
-        const { me } = meResponse.data.data;
+        const me = await getMe(token);
         expect (me.username).toBe(variables.username);
+
+        // Delete user to make test repeatable (could be resolved by using in memory db for tests)
+        const adminToken = await userSignIn("rodhlann", "pass123");
+        deleteUser(me.id, adminToken)
+    });
+
+    test('sign in and confirm user is me', async () => {
+        const login = 'rodhlann';
+        const password = 'pass123';
+
+        const token = await userSignIn(login, password);
+
+        const me = await getMe(token);
+        expect (me.username).toBe(login);
     });
 
     test('fail to authorize me request when passing null token', async () => {
@@ -136,3 +149,61 @@ describe('user tests', () => {
         }
     });
 });
+
+const getMe = async (token: string) => {
+    const meResponse = await axios.post(API_URL, {
+        query: `
+            {
+                me {
+                    id
+                    username
+                }
+            }
+        `,
+        },
+        { headers: { 'x-token': token, ...headers } }
+    );
+
+    const { me } = meResponse.data.data;
+    expect(me).toBeTruthy();
+    return me;
+}
+
+const userSignIn = async (login: string, password: string) => {
+    const variables = {
+        username: login,
+        password
+    };
+
+    const tokenResponse = await axios.post(API_URL, {
+        query: `
+                mutation ($username: String!, $password: String!) {
+                    signIn(login: $username, password: $password) {
+                        token
+                    }
+                }
+            `,
+            variables
+        },
+        { headers }
+    );
+    const { token } = tokenResponse.data.data.signIn;
+    expect(token).toBeTruthy();
+    return token;
+}
+
+const deleteUser = async (id: string, token: string) => {
+    const deleteResponse = await axios.post(API_URL, {
+        query: `
+            mutation($id: ID!) {
+                deleteUser(id: $id)
+            }
+        `,
+        variables: { id }
+        },
+        { headers: { 'x-token': token, ...headers } }
+    );
+
+    const isDeleted = deleteResponse.data.data.deleteUser;
+    expect(isDeleted).toBeTruthy();
+}
