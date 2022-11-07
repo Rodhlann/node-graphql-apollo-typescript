@@ -1,0 +1,13 @@
+{
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+        "src/app/**/*.{ts,js}"
+    ],
+    "testPathIgnorePatterns": [
+        "__tests__/integration/util"
+    ],
+    "transformIgnorePatterns": [
+        "!node_modules/"
+    ]
+}

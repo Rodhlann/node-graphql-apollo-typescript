@@ -1,11 +1,18 @@
 import axios from 'axios';
-import { API_URL, headers } from './sharedVariables';
+import { API_URL, headers } from './util/sharedVariables';
+import { userSignIn } from './util/sharedFunctions';
 
 describe('user int tests', () => {
 
     test('get all users', async () => {
         const result = await axios.post(API_URL,
-            { query: '{users{id}}' },
+            { query: `#graphql
+                {
+                    users {
+                        id
+                    }
+                }`
+            },
             { headers }
         );
         const { users } = result.data.data;
@@ -14,7 +21,15 @@ describe('user int tests', () => {
 
     test('confirm users are returned with messages', async () => {
         const result = await axios.post(API_URL,
-            { query: '{users{messages{id}}}' },
+            { query: `#graphql
+                {
+                    users{
+                        messages{
+                            id
+                        }
+                    }
+                }`
+            },
             { headers }
         );
         const { users } = result.data.data;
@@ -33,7 +48,7 @@ describe('user int tests', () => {
         const variables = { id: users[userIndex].id };
         const userResponse = await axios.post(API_URL,
             {
-                query: `
+                query: `#graphql
                     query ($id: ID!) {
                         user(id: $id) {
                             id
@@ -57,7 +72,7 @@ describe('user int tests', () => {
         };
 
         const tokenResponse = await axios.post(API_URL, {
-                query: `
+                query: `#graphql
                     mutation($username: String!, $email: String!, $password: String!) {
                         signUp(username: $username, email: $email, password: $password) {
                             token
@@ -77,7 +92,7 @@ describe('user int tests', () => {
 
         // Delete user to make test repeatable (could be resolved by using in memory db for tests)
         const adminToken = await userSignIn("rodhlann", "pass123");
-        deleteUser(me.id, adminToken)
+        await deleteUser(me.id, adminToken)
     });
 
     test('sign in and confirm user is me', async () => {
@@ -111,7 +126,7 @@ describe('user int tests', () => {
         const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTcsImVtYWlsIjoicm9kaGxhbm5AZ21haWwuY29tIiwidXNlcm5hbWUiOiJyb2RobGFubiIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTY2NzUwNjQ5NSwiZXhwIjoxNjY3NTA4Mjk1fQ.SDkgyg4Dk_Je4zmgFQ8Cx7i6WD4tzWKggpHPmRzyt8E';
         try {
             const meResponse = await axios.post(API_URL, {
-                query: `
+                query: `#graphql
                     {
                         me {
                             username
@@ -130,8 +145,8 @@ describe('user int tests', () => {
     test('fail to authorize me request when passing invalid token', async () => {
         const invalidToken = 'badtokenisbad';
         try {
-            const meResponse = await axios.post(API_URL, {
-                query: `
+            await axios.post(API_URL, {
+                query: `#graphql
                     {
                         me {
                             username
@@ -150,7 +165,7 @@ describe('user int tests', () => {
 
 const getMe = async (token: string) => {
     const meResponse = await axios.post(API_URL, {
-        query: `
+        query: `#graphql
             {
                 me {
                     id
@@ -165,29 +180,6 @@ const getMe = async (token: string) => {
     const { me } = meResponse.data.data;
     expect(me).toBeTruthy();
     return me;
-}
-
-const userSignIn = async (login: string, password: string) => {
-    const variables = {
-        username: login,
-        password
-    };
-
-    const tokenResponse = await axios.post(API_URL, {
-        query: `
-                mutation ($username: String!, $password: String!) {
-                    signIn(login: $username, password: $password) {
-                        token
-                    }
-                }
-            `,
-            variables
-        },
-        { headers }
-    );
-    const { token } = tokenResponse.data.data.signIn;
-    expect(token).toBeTruthy();
-    return token;
 }
 
 const deleteUser = async (id: string, token: string) => {
