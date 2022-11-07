@@ -1,9 +1,7 @@
 import axios from 'axios';
+import { API_URL, headers } from './sharedVariables';
 
-const API_URL = 'http://localhost:8000/graphql';
-const headers = { 'Content-Type': 'application/json' };
-
-describe('user tests', () => {
+describe('user int tests', () => {
 
     test('get all users', async () => {
         const result = await axios.post(API_URL,
@@ -49,7 +47,7 @@ describe('user tests', () => {
 
         const { user } = userResponse.data.data;
         expect(user).toStrictEqual(users[userIndex]);
-    })
+    });
 
     test('user sign up', async () => {
         const variables = {
